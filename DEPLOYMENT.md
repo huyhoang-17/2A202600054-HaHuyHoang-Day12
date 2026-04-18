@@ -1,79 +1,68 @@
-> **Student Name:** _________________________  
-> **Student ID:** _________________________  
-> **Date:** _________________________
+> **Student Name:** Hà Huy Hoàng
+
+> **Student ID:** 2A202600054
+
+> **Date:** 17/04/2026
 
 ---
+
 # Deployment Information
 
 ## Public URL
-https://your-agent.railway.app
+https://serene-analysis-production-a125.up.railway.app
 
 ## Platform
-Railway / Render / Cloud Run
+Railway
 
 ## Test Commands
 
 ### Health Check
 ```bash
-curl https://your-agent.railway.app/health
-# Expected: {"status": "ok"}
+curl https://day12-hoang-agent-production.up.railway.app/health
 ```
+Expected: `{"status":"ok","version":"1.0.0","environment":"production","uptime_seconds":...,"checks":{"llm":"mock"},"timestamp":"..."}`
 
-### API Test (with authentication)
+### Readiness Check
 ```bash
-curl -X POST https://your-agent.railway.app/ask \
-  -H "X-API-Key: YOUR_KEY" \
+curl https://day12-hoang-agent-production.up.railway.app/ready
+```
+Expected: `{"ready":true}`
+
+### Authentication Required (should return 401)
+```bash
+curl -X POST https://day12-hoang-agent-production.up.railway.app/ask \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "test", "question": "Hello"}'
+  -d '{"question":"Hello"}'
 ```
+Expected: `401 {"detail":"Invalid or missing API key. Include header: X-API-Key: <key>"}`
 
-## Environment Variables Set
-- PORT
-- REDIS_URL
-- AGENT_API_KEY
-- LOG_LEVEL
-
-## Screenshots
-- [Deployment dashboard](screenshots/dashboard.png)
-- [Service running](screenshots/running.png)
-- [Test results](screenshots/test.png)
-```
-
-##  Pre-Submission Checklist
-
-- [ ] Repository is public (or instructor has access)
-- [ ] `MISSION_ANSWERS.md` completed with all exercises
-- [ ] `DEPLOYMENT.md` has working public URL
-- [ ] All source code in `app/` directory
-- [ ] `README.md` has clear setup instructions
-- [ ] No `.env` file committed (only `.env.example`)
-- [ ] No hardcoded secrets in code
-- [ ] Public URL is accessible and working
-- [ ] Screenshots included in `screenshots/` folder
-- [ ] Repository has clear commit history
-
----
-
-##  Self-Test
-
-Before submitting, verify your deployment:
-
+### API Test with authentication (should return 200)
 ```bash
-# 1. Health check
-curl https://your-app.railway.app/health
+curl -X POST https://day12-hoang-agent-production.up.railway.app/ask \
+  -H "X-API-Key: hoang-secret-key-2026-vinuni" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"What is cloud deployment?"}'
+```
+Expected: `200 {"question":"...","answer":"...","model":"gpt-4o-mini","timestamp":"..."}`
 
-# 2. Authentication required
-curl https://your-app.railway.app/ask
-# Should return 401
-
-# 3. With API key works
-curl -H "X-API-Key: YOUR_KEY" https://your-app.railway.app/ask \
-  -X POST -d '{"user_id":"test","question":"Hello"}'
-# Should return 200
-
-# 4. Rate limiting
-for i in {1..15}; do 
-  curl -H "X-API-Key: YOUR_KEY" https://your-app.railway.app/ask \
-    -X POST -d '{"user_id":"test","question":"test"}'; 
+### Rate Limiting Test (20 req/min → gets 429 after limit)
+```bash
+for i in {1..25}; do
+  curl -X POST https://day12-hoang-agent-production.up.railway.app/ask \
+    -H "X-API-Key: hoang-secret-key-2026-vinuni" \
+    -H "Content-Type: application/json" \
+    -d '{"question":"test"}'
 done
-# Should eventually return 429
+```
+Expected: First 20 requests return 200, then 429 with `Retry-After: 60` header.
+
+## Environment Variables Set on Railway
+- `PORT` — auto-injected by Railway
+- `REDIS_URL` — auto-injected from Railway Redis plugin
+- `AGENT_API_KEY` — API authentication key
+- `JWT_SECRET` — JWT signing secret
+- `ENVIRONMENT=production`
+- `APP_NAME=Day12 Hoang Agent`
+- `APP_VERSION=1.0.0`
+- `RATE_LIMIT_PER_MINUTE=20`
+- `DAILY_BUDGET_USD=5.0`
