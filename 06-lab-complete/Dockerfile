@@ -7,11 +7,10 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-RUN apt-get update && apt-get install -y gcc libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 
 # Stage 2: Runtime
@@ -23,8 +22,7 @@ RUN groupadd -r agent && useradd -r -g agent -d /app agent
 WORKDIR /app
 
 # Copy packages từ builder
-COPY --from=builder /root/.local /home/agent/.local
-
+COPY --from=builder /usr/local /usr/local
 # Copy application
 COPY app/ ./app/
 COPY utils/ ./utils/
@@ -47,3 +45,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     || exit 1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+
